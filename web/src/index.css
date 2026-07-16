@@ -1,0 +1,24 @@
+/* Manrope autohospedada (se cachea con la app, funciona sin conexion). */
+@import '@fontsource/manrope/400.css';
+@import '@fontsource/manrope/500.css';
+@import '@fontsource/manrope/600.css';
+@import '@fontsource/manrope/700.css';
+@import '@fontsource/manrope/800.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  /* Cifras de igual ancho: alinea columnas de montos y evita saltos. */
+  .nums {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -0.01em;
+  }
+}

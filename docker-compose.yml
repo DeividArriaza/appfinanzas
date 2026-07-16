@@ -1,0 +1,65 @@
+# Entorno de desarrollo local: base de datos + API + frontend.
+# Levantar con:  docker compose up
+# Detener con:   Ctrl+C  (o  docker compose down)
+
+services:
+  # --- Base de datos ---
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      # Los datos viven en un volumen nombrado: sobreviven a recrear el contenedor.
+      - pgdata:/var/lib/postgresql/data
+      # El esquema se ejecuta solo la primera vez (cuando el volumen esta vacio).
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # --- API (backend) ---
+  api:
+    build: ./api
+    # Instala dependencias al arrancar y luego levanta. Asi, si cambian las
+    # dependencias, basta con reiniciar el servicio (sin recrear volumenes).
+    command: sh -c "npm install && npm run dev"
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      API_PORT: ${API_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+    ports:
+      # host:contenedor. Publicamos en API_HOST_PORT para no chocar con el
+      # puerto 3000 que ya usa otra app en esta maquina.
+      - '${API_HOST_PORT}:${API_PORT}'
+    volumes:
+      # Montamos el codigo para recarga en vivo, pero conservamos el
+      # node_modules instalado dentro del contenedor.
+      - ./api:/app
+      - /app/node_modules
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # --- Frontend (web / PWA) ---
+  web:
+    build: ./web
+    # Igual que la API: instala dependencias al arrancar y luego levanta Vite.
+    command: sh -c "npm install && npm run dev"
+    # Sin VITE_API_URL: la app deriva la URL de la API del host por el que se
+    # abre (localhost o la IP de la red local para probar en el telefono).
+    ports:
+      # host:contenedor. Dentro del contenedor Vite sigue en 5173; afuera se
+      # publica en WEB_HOST_PORT para no chocar con el 5173 ya ocupado.
+      - '${WEB_HOST_PORT}:5173'
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  pgdata:
