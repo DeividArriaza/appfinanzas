@@ -168,8 +168,10 @@ respetando el área segura de iOS. El estado de la pestaña activa vive en
 (`components/icons.tsx`), sin emojis. Activo en negro, inactivos en gris; el azul
 se reserva para el botón central de agregar.
 
-- **Resumen** (`screens/Resumen.tsx`): balance del mes, gastos por categoría en
-  números y gráficas, switches de moneda y de vista individual/común.
+- **Resumen** (`screens/Resumen.tsx`): balance del mes, totales por categoría,
+  gráficas de desglose (`GraficoDesglose`: gastos e ingresos por subcategoría, con
+  selector Totales/Fijos/Variables y porcentaje), lista de movimientos, alerta de
+  balance, y switches de moneda y de vista (Yo/Común/Pareja).
 - **Agregar** (`screens/Agregar.tsx`): registrar/editar/eliminar movimientos.
   Botón central azul (acción principal).
 - **Perfil** (`screens/Perfil.tsx`): datos de la cuenta, moneda preferida,

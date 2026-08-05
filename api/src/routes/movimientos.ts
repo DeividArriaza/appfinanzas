@@ -127,7 +127,7 @@ export async function rutasMovimientos(app: FastifyInstance) {
     const r = await resolver((req.body ?? {}) as Record<string, unknown>, req.user.sub);
     if ('error' in r) return reply.code(400).send({ error: r.error });
 
-    const filas = await query(
+    const filas = await query<Record<string, unknown>>(
       `INSERT INTO movimientos
          (usuario_id, fecha, monto, moneda, categoria, tipo, subcategoria_id, descripcion)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
@@ -144,7 +144,7 @@ export async function rutasMovimientos(app: FastifyInstance) {
     const r = await resolver((req.body ?? {}) as Record<string, unknown>, req.user.sub);
     if ('error' in r) return reply.code(400).send({ error: r.error });
 
-    const filas = await query(
+    const filas = await query<Record<string, unknown>>(
       `UPDATE movimientos
        SET fecha = $1, monto = $2, moneda = $3, categoria = $4, tipo = $5,
            subcategoria_id = $6, descripcion = $7

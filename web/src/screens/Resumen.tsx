@@ -2,6 +2,7 @@
 // movimientos. Un switch global GTQ/USD convierte todos los montos del menu.
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Card, Amount, Button, Modal } from '../components/ui';
+import GraficoDesglose from '../components/GraficoDesglose';
 import { useAuth } from '../auth/context';
 import { apiFetch } from '../lib/api';
 import { CATEGORIAS, type Categoria } from '../lib/categorias';
@@ -310,6 +311,24 @@ export default function Resumen({ usuario }: { usuario: Usuario }) {
           ))}
         </div>
       </Card>
+
+      {/* Graficas: desglose de gastos e ingresos por subcategoria. */}
+      <GraficoDesglose
+        movs={movs}
+        categoria="gasto"
+        titulo="Gastos desglosados"
+        tono="expense"
+        monedaVista={monedaVista}
+        tasa={tasa}
+      />
+      <GraficoDesglose
+        movs={movs}
+        categoria="ingreso"
+        titulo="Ingresos desglosados"
+        tono="income"
+        monedaVista={monedaVista}
+        tasa={tasa}
+      />
 
       {/* Alerta de balance: boton compacto que abre una ventana.
           En la vista de pareja es solo lectura (no hay boton de editar). */}
