@@ -41,10 +41,10 @@ services:
     environment:
       SITE_ADDRESS: ${SITE_ADDRESS}
     ports:
-      # Configurables: si el 80/443 ya estan ocupados (otro proxy en el host),
-      # se publican en puertos alternos, ej. HTTP_PORT=8090.
-      - '${HTTP_PORT:-80}:80'
-      - '${HTTPS_PORT:-443}:443'
+      # Atado a 127.0.0.1: la app NO se expone al internet directamente; solo el
+      # Caddy del host (mismo servidor) la alcanza y publica con HTTPS por el
+      # dominio. Asi no se puede entrar por http://IP:8090 en texto plano.
+      - '127.0.0.1:${HTTP_PORT:-8090}:80'
     volumes:
       - caddy_data:/data
       - caddy_config:/config

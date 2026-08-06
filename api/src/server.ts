@@ -20,7 +20,11 @@ const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
   throw new Error('Falta la variable de entorno JWT_SECRET');
 }
-await app.register(jwt, { secret: jwtSecret });
+// Los tokens vencen a los 30 dias (si se filtra uno, no sirve para siempre).
+await app.register(jwt, {
+  secret: jwtSecret,
+  sign: { expiresIn: '30d' },
+});
 
 // Decorador para proteger rutas: verifica el token antes de entrar al handler.
 app.decorate('authenticate', async (request, reply) => {
@@ -29,6 +33,16 @@ app.decorate('authenticate', async (request, reply) => {
   } catch {
     reply.code(401).send({ error: 'No autorizado' });
   }
+});
+
+// Manejador de errores: registra el detalle real en el log, pero al cliente le
+// responde algo generico en los 500 (no filtra internals como nombres de tablas).
+app.setErrorHandler((err, request, reply) => {
+  request.log.error(err);
+  const status = err.statusCode ?? 500;
+  reply
+    .code(status)
+    .send({ error: status >= 500 ? 'Error interno del servidor' : err.message });
 });
 
 // Endpoint de salud: confirma que la API responde y que la base contesta.
