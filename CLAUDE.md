@@ -109,6 +109,77 @@ vacío). Los cambios de esquema sobre una base existente van en `db/migrations/`
 `docker compose exec -T db psql -U appfinanzas -d appfinanzas < db/migrations/XXX.sql`.
 Ambos deben quedar equivalentes. A futuro conviene una herramienta de migraciones.
 
+## Producción y operación (¡leer antes de tocar el servidor!)
+
+La app está **desplegada** en el VPS Contabo, accesible en **https://cuencla.duckdns.org**
+(dominio gratuito de DuckDNS, HTTPS con Let's Encrypt).
+
+### Arquitectura en producción
+
+- Se usa `docker-compose.prod.yml` + `.env.prod` (NO el compose de desarrollo).
+  Comandos **siempre** así:
+  `docker compose -f docker-compose.prod.yml --env-file .env.prod <...>`.
+- Imágenes de producción: API compilada (`tsc`, `api/Dockerfile.prod`) y frontend
+  compilado servido por un **Caddy interno** (`caddy/Dockerfile` + `caddy/Caddyfile`).
+- El servidor **ya tenía su propio Caddy** en 80/443 (proxy de otras apps). Por eso
+  nuestro Caddy interno se publica atado a **`127.0.0.1:8090`** (no expuesto a
+  internet), y el **Caddy del host** hace `reverse_proxy` de `cuencla.duckdns.org`
+  → `localhost:8090` y termina el HTTPS. No tocar los otros sitios del host Caddy.
+
+### ⚠️ Regla de oro: NUNCA `down -v` en producción
+
+El volumen `pgdata` **son los datos reales**. Está prohibido en prod:
+`docker compose ... down -v`, `docker volume rm`, `docker system prune --volumes`.
+(Durante el deploy inicial fue seguro solo porque la base estaba vacía.)
+
+- **Actualizar la app** (seguro, conserva datos): `git pull` y luego
+  `docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build`.
+- **Reiniciar**: `... up -d` o `... restart`. El volumen sobrevive a todo esto.
+
+### Cambios de esquema en producción → migraciones, nunca recrear la base
+
+`init.sql` corre **solo** cuando el volumen está vacío; en prod no se vuelve a
+ejecutar. Para cambiar la base viva (agregar tabla/columna, normalizar) se aplica
+una migración de `db/migrations/` **sin borrar datos**:
+`docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T db psql -U appfinanzas -d appfinanzas < db/migrations/XXX.sql`.
+Actualizar también `init.sql` (para instalaciones nuevas) y **tomar respaldo antes**.
+
+### Gotchas aprendidos en esta sesión
+
+- **`db/init.sql` y `db/migrations/*.sql` DEBEN estar versionados.** El `.gitignore`
+  tenía `*.sql` (para dumps) que los excluía → no llegaban al server. Se corrigió con
+  excepciones `!db/init.sql` y `!db/migrations/*.sql`. Si el deploy no crea tablas,
+  revisar esto primero.
+- **Bind-mount fantasma**: si `db/init.sql` no existe cuando arranca el compose,
+  Docker crea una **carpeta vacía** en su lugar y Postgres no crea tablas. Verificar
+  que sea un **archivo** (`ls -l db/init.sql`) antes de `up`.
+- **Permisos**: los archivos que Docker crea son de `root`; si `git pull` falla por
+  "Permission denied", `sudo chown -R deiv:deiv ~/appfinanzas`.
+- **SSH**: usar **llave** (no contraseña). Adivinar contraseñas dispara `fail2ban` y
+  bloquea la IP. La contraseña que se compartió durante el setup debe **rotarse**.
+
+### Secretos (`.env.prod`, NO versionado)
+
+`POSTGRES_PASSWORD`, `DATABASE_URL` (misma clave), `JWT_SECRET` — aleatorios
+(`openssl rand`). `SITE_ADDRESS=:80`, `HTTP_PORT=8090`.
+
+### Endurecimiento aplicado
+
+- Caddy interno solo en `127.0.0.1` (la app no se sirve en HTTP plano por IP).
+- Tokens JWT con **vencimiento de 30 días**.
+- Manejador de errores global (no filtra detalles internos en los 500).
+- **HSTS** en el Caddy interno (fuerza HTTPS en el navegador).
+- Íconos de la PWA en `web/public/` (`icon-192/512.png`, `apple-touch-icon.png`).
+
+### Recuperación de un respaldo
+
+`gunzip < respaldo.sql.gz | docker compose -f docker-compose.prod.yml --env-file .env.prod exec -T db psql -U appfinanzas -d appfinanzas`.
+
+### ⛔ Pendiente crítico
+
+**Respaldo automático (`pg_dump`) todavía NO configurado.** Sin esto, una falla de
+disco = pérdida total. Es lo próximo a hacer (cron diario + copia fuera del server).
+
 ## Roadmap
 
 1. **Local primero**: proyecto corriendo 100% en la compu del desarrollador con Docker
@@ -116,15 +187,16 @@ Ambos deben quedar equivalentes. A futuro conviene una herramienta de migracione
 2. Features: login → vinculación de pareja → presupuestos → movimientos →
    vista individual/común → doble moneda.
 3. Reporte mensual por correo + respaldo automático diario.
-4. Producción: conseguir dominio/subdominio → Caddy → deploy a Contabo.
+4. Producción: dominio → Caddy → deploy a Contabo. **HECHO** (falta el respaldo
+   automático del punto 3; ver "Pendiente crítico" arriba).
 
 ## Pendientes / decisiones abiertas
 
-- Conseguir dominio o subdominio (gratis tipo DuckDNS, o `.com` ~$10/año). No urge
-  hasta el deploy.
-- Confirmar RAM libre del Contabo (`free -h`) y si hay reverse proxy (`docker ps`,
-  `ss -tlnp | grep -E ':80|:443'`). No urge hasta el deploy.
-- ¿Diseñar bocetos de pantallas antes de codear, o montar el esqueleto técnico primero?
+- **Respaldo automático (`pg_dump`)**: lo más urgente ahora que hay producción.
+- Dominio (DuckDNS `cuencla.duckdns.org`) y reverse proxy del host: **resueltos**.
+- Rotar la contraseña SSH compartida en el setup y pasar a solo-llave.
+- Funciones pendientes de UI: editar movimientos, borrar subcategorías, editar
+  perfil (nombre/moneda/contraseña), reporte mensual por correo.
 - **Ocultar/eliminar categorías desde el menú**: a futuro, permitir que el usuario
   oculte categorías que no usa (ej. `inversion`). Hoy las 4 categorías son fijas
   (enum en la base). Sería una preferencia por usuario, no borrar el enum.
