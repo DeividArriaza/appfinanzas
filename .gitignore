@@ -26,13 +26,18 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# Base de datos y respaldos (no deben ir al repo)
-*.sql
+# Respaldos y volcados de la base (no deben ir al repo)
 *.sqlite
 *.sqlite3
 *.dump
 backups/
 pgdata/
+# Ignoramos .sql sueltos (por si son dumps), PERO el esquema y las migraciones
+# SÍ tienen que ir al repo (los necesita el deploy):
+*.sql
+!db/init.sql
+!db/migrations/
+!db/migrations/*.sql
 
 # Cachés y herramientas
 .cache/
