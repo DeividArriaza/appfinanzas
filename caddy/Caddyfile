@@ -4,6 +4,11 @@
 {$SITE_ADDRESS} {
 	encode gzip
 
+	# HSTS: una vez que el navegador visita por HTTPS, fuerza https siempre
+	# para este dominio (evita volver a caer en http). Se recibe por la
+	# conexion HTTPS del Caddy del host, asi que el navegador lo respeta.
+	header Strict-Transport-Security "max-age=31536000"
+
 	# Las llamadas a /api/* van a la API (se quita el prefijo /api).
 	handle_path /api/* {
 		reverse_proxy api:3000
