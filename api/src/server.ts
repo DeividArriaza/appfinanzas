@@ -9,6 +9,10 @@ import { rutasPresupuestos } from './routes/presupuestos.js';
 import { rutasMovimientos } from './routes/movimientos.js';
 import { rutasSubcategorias } from './routes/subcategorias.js';
 import { rutasTipoCambio } from './routes/tipoCambio.js';
+import {
+  rutasRecordatorios,
+  iniciarProgramadorRecordatorios,
+} from './routes/recordatorios.js';
 
 const app = Fastify({ logger: true });
 
@@ -73,11 +77,15 @@ await app.register(rutasSubcategorias);
 // Ruta del tipo de cambio (USD -> GTQ).
 await app.register(rutasTipoCambio);
 
+// Recordatorio diario por notificacion push.
+await app.register(rutasRecordatorios);
+
 const port = Number(process.env.API_PORT ?? 3000);
 
 try {
   // host 0.0.0.0 para que sea accesible desde fuera del contenedor.
   await app.listen({ port, host: '0.0.0.0' });
+  iniciarProgramadorRecordatorios(app);
 } catch (err) {
   app.log.error(err);
   process.exit(1);

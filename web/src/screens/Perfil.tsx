@@ -2,6 +2,7 @@
 import { Card, Button } from '../components/ui';
 import { useAuth } from '../auth/context';
 import VinculoPareja from './VinculoPareja';
+import Recordatorio from './Recordatorio';
 
 export default function Perfil() {
   const { usuario, cerrarSesion } = useAuth();
@@ -40,6 +41,9 @@ export default function Perfil() {
 
       {/* Vinculacion de pareja. */}
       <VinculoPareja usuario={usuario} />
+
+      {/* Recordatorio diario por notificacion. */}
+      <Recordatorio />
 
       <Button variant="secondary" onClick={cerrarSesion}>
         Cerrar sesión

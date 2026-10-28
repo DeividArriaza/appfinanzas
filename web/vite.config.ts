@@ -10,6 +10,10 @@ export default defineConfig({
     // Convierte la app en una PWA instalable en el telefono.
     VitePWA({
       registerType: 'autoUpdate',
+      // Agrega al service worker el manejo de notificaciones push.
+      workbox: { importScripts: ['push-sw.js'] },
+      // En desarrollo tambien registra el SW (necesario para probar push).
+      devOptions: { enabled: true },
       manifest: {
         name: 'Cuencla',
         short_name: 'Cuencla',

@@ -31,6 +31,9 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       API_PORT: ${API_PORT}
       JWT_SECRET: ${JWT_SECRET}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-}
     ports:
       # host:contenedor. Publicamos en API_HOST_PORT para no chocar con el
       # puerto 3000 que ya usa otra app en esta maquina.
