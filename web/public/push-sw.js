@@ -12,7 +12,8 @@ self.addEventListener('push', (event) => {
     self.registration.showNotification(titulo, {
       body: data.body || '¿Ya registraste tus gastos de hoy?',
       icon: '/icon-192.png',
-      badge: '/icon-192.png',
+      // Android pinta el badge como silueta: debe ser blanco sobre transparente.
+      badge: '/badge-96.png',
       tag: 'recordatorio-diario',
       data: { url: data.url || '/' },
     }),
